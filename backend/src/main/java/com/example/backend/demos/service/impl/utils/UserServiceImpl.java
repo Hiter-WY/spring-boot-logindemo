@@ -57,6 +57,47 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    @Override
+    public boolean changePassword(String username, String hash1, String newHash1) {
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("username", username);
+        User user = userMapper.selectOne(queryWrapper);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        String localhash1 = user.getHash1();
+//
+//        System.out.println("Local hash1: " + localhash1);
+//        System.out.println("Received hash1: " + hash1);
+//        System.out.println("New hash1: " + newHash1);
+        if (!localhash1.equals(hash1)) {
+            System.out.println("Original password does not match.");
+            return false;
+        }
+//        System.out.println("Hashes match. Proceeding to update password.");
+
+        user.setHash1(newHash1);
+        int rows = userMapper.updateById(user);
+        if (rows > 0) {
+            System.out.println("Password updated successfully.");
+            return true;
+        } else {
+            System.out.println("Error updating password.");
+            return false;
+        }
+    }
+
+    @Override
+    public String getHash1ByUsername(String username) {
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("username", username);
+        User user = userMapper.selectOne(queryWrapper);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        return user.getHash1();
+    }
+
     private String generateHash(String input) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -74,4 +115,6 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException(e);
         }
     }
+
+
 }

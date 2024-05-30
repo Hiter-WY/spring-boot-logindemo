@@ -44,7 +44,7 @@
 
 <script>
 import axios from "axios";
-import sha256 from "crypto-js/sha256";
+import CryptoJS from "crypto-js";
 
 export default {
   data() {
@@ -67,13 +67,27 @@ export default {
     generateVerificationCode() {
       return Math.floor(100000 + Math.random() * 900000).toString();
     },
+    decryptAES(encryptedData, key) {
+      const keyHash = CryptoJS.SHA256(key)
+        .toString(CryptoJS.enc.Hex)
+        .substring(0, 32);
+      const decrypted = CryptoJS.AES.decrypt(
+        encryptedData,
+        CryptoJS.enc.Hex.parse(keyHash),
+        {
+          mode: CryptoJS.mode.ECB,
+          padding: CryptoJS.pad.Pkcs7
+        }
+      );
+      return CryptoJS.enc.Utf8.stringify(decrypted);
+    },
     login() {
       this.loading = true;
       const verificationCode = this.generateVerificationCode();
-      const hash1 = sha256(
+      const hash1 = CryptoJS.SHA256(
         this.loginForm.username + this.loginForm.password
       ).toString();
-      const hash2 = sha256(hash1 + verificationCode).toString();
+      const hash2 = CryptoJS.SHA256(hash1 + verificationCode).toString();
       console.log(`hash1: ${hash1}`);
       console.log(`hash2: ${hash2}`);
       axios
@@ -84,11 +98,18 @@ export default {
         })
         .then(response => {
           this.loading = false;
-          if (response.data === "登录成功") {
+          if (response.data.message === "登录成功") {
             alert("登录成功");
+            const encryptedCode = response.data.encryptedCode;
+            localStorage.setItem("Encrypted Verification Code", encryptedCode); // 存储加密后的代码
+
+            // 解密encryptedCode
+            const decryptedCode = this.decryptAES(encryptedCode, hash1);
+            // console.log("Decrypted Verification Code:", decryptedCode);
+            localStorage.setItem("Decrypted Verification Code", decryptedCode); // 存储解密后的代码
             this.$router.replace({ path: "/HelloWorld" });
           } else {
-            alert("登录失败：" + response.data.msg);
+            alert("登录失败：" + response.data);
           }
         })
         .catch(() => {

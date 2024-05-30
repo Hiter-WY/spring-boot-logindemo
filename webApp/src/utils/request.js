@@ -5,7 +5,7 @@
 
 import axios from "axios";
 import qs from "qs";
-
+import AESUtil from "./AESUtil";
 // 解决跨域问题，代理设置在`vite.config.js`
 const baseURL = "";
 
@@ -62,5 +62,3 @@ instance.interceptors.request.use(
 //         return Promise.reject(err);
 //     }
 // )
-
-export default instance;
